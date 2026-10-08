@@ -187,14 +187,14 @@ non-gold = grey, correct-but-unsuggested = purple):
 
 | model | en | fi |
 |---|---|---|
-| d1-omni-600M | [sharp](results/rerank-en-d1-omni-600M-sharp.csv) · [sharp+rules](results/rerank-en-d1-omni-600M-sharp-state.csv) | [sharp](results/rerank-fi-d1-omni-600M-sharp.csv) · [sharp+rules](results/rerank-fi-d1-omni-600M-sharp-state.csv) |
-| Laya | [sharp](results/rerank-en-laya-sharp.csv) · [sharp+rules](results/rerank-en-laya-sharp-state.csv) | [sharp](results/rerank-fi-laya-sharp.csv) · [sharp+rules](results/rerank-fi-laya-sharp-state.csv) |
-| d1-3B | [sharp](results/rerank-en-d1-3B-sharp.csv) · [sharp+rules](results/rerank-en-d1-3B-sharp-state.csv) | [sharp](results/rerank-fi-d1-3B-sharp.csv) · [sharp+rules](results/rerank-fi-d1-3B-sharp-state.csv) |
-| lev | [sharp](results/rerank-en-lev-sharp.csv) · [sharp+rules](results/rerank-en-lev-sharp-state.csv) | [sharp](results/rerank-fi-lev-sharp.csv) · [sharp+rules](results/rerank-fi-lev-sharp-state.csv) |
-| Kev-4B | [sharp](results/rerank-en-kev-sharp.csv) · [sharp+rules](results/rerank-en-kev-sharp-state.csv) | [sharp](results/rerank-fi-kev-sharp.csv) · [sharp+rules](results/rerank-fi-kev-sharp-state.csv) |
-| Clef-Flash | [sharp](results/rerank-en-clefflash-sharp.csv) · [sharp+rules](results/rerank-en-clefflash-sharp-state.csv) | [sharp](results/rerank-fi-clefflash-sharp.csv) · [sharp+rules](results/rerank-fi-clefflash-sharp-state.csv) |
-| Bespoke-Nimble | [sharp](results/rerank-en-bespoke-nimble-sharp.csv) · [sharp+rules](results/rerank-en-bespoke-nimble-sharp-state.csv) | [sharp](results/rerank-fi-bespoke-nimble-sharp.csv) · [sharp+rules](results/rerank-fi-bespoke-nimble-sharp-state.csv) |
-| OpenJev | [sharp](results/rerank-en-openjev-sharp.csv) · [sharp+rules](results/rerank-en-openjev-sharp-state.csv) | [sharp](results/rerank-fi-openjev-sharp.csv) · [sharp+rules](results/rerank-fi-openjev-sharp-state.csv) |
+| Laya | [sharp](results/rerank-en-laya-sharp.png) · [sharp+rules](results/rerank-en-laya-sharp-state.png) | [sharp](results/rerank-fi-laya-sharp.png) · [sharp+rules](results/rerank-fi-laya-sharp-state.png) |
+| d1-omni-600M | [sharp](results/rerank-en-d1-omni-600M-sharp.png) · [sharp+rules](results/rerank-en-d1-omni-600M-sharp-state.png) | [sharp](results/rerank-fi-d1-omni-600M-sharp.png) · [sharp+rules](results/rerank-fi-d1-omni-600M-sharp-state.png) |
+| d1-3B | [sharp](results/rerank-en-d1-3B-sharp.png) · [sharp+rules](results/rerank-en-d1-3B-sharp-state.png) | [sharp](results/rerank-fi-d1-3B-sharp.png) · [sharp+rules](results/rerank-fi-d1-3B-sharp-state.png) |
+| lev | [sharp](results/rerank-en-lev-sharp.png) · [sharp+rules](results/rerank-en-lev-sharp-state.png) | [sharp](results/rerank-fi-lev-sharp.png) · [sharp+rules](results/rerank-fi-lev-sharp-state.png) |
+| Kev-4B | [sharp](results/rerank-en-kev-sharp.png) · [sharp+rules](results/rerank-en-kev-sharp-state.png) | [sharp](results/rerank-fi-kev-sharp.png) · [sharp+rules](results/rerank-fi-kev-sharp-state.png) |
+| Clef-Flash | [sharp](results/rerank-en-clefflash-sharp.png) · [sharp+rules](results/rerank-en-clefflash-sharp-state.png) | [sharp](results/rerank-fi-clefflash-sharp.png) · [sharp+rules](results/rerank-fi-clefflash-sharp-state.png) |
+| Bespoke-Nimble | [sharp](results/rerank-en-bespoke-nimble-sharp.png) · [sharp+rules](results/rerank-en-bespoke-nimble-sharp-state.png) | [sharp](results/rerank-fi-bespoke-nimble-sharp.png) · [sharp+rules](results/rerank-fi-bespoke-nimble-sharp-state.png) |
+| OpenJev | [sharp](results/rerank-en-openjev-sharp.png) · [sharp+rules](results/rerank-en-openjev-sharp-state.png) | [sharp](results/rerank-fi-openjev-sharp.png) · [sharp+rules](results/rerank-fi-openjev-sharp-state.png) |
 
 ### Recommendations
 
