@@ -1,0 +1,126 @@
+# Finnish
+
+## Test set selection
+
+for i in `ls *.txt|shuf|head -n 50|cut -d '.' -f 1`; do cp $i.* ~/git/Annif/jev-test-sets/fi/; done
+
+## yso-mllm-fi eval
+
+(annif) [oisuomin@annif-data-kk Annif]$ annif eval -j6 yso-mllm-fi jev-test-sets/fi/
+Precision (doc avg):          	0.1800
+Recall (doc avg):             	0.2571
+F1 score (doc avg):           	0.1972
+Precision (subj avg):         	0.0018
+Recall (subj avg):            	0.0019
+F1 score (subj avg):          	0.0017
+Precision (weighted subj avg):	0.2288
+Recall (weighted subj avg):   	0.2296
+F1 score (weighted subj avg): 	0.2166
+Precision (microavg):         	0.1800
+Recall (microavg):            	0.2296
+F1 score (microavg):          	0.2018
+F1@5:                         	0.2165
+NDCG:                         	0.2944
+NDCG@5:                       	0.3409
+NDCG@10:                      	0.3052
+Precision@1:                  	0.5000
+Precision@3:                  	0.3800
+Precision@5:                  	0.2800
+True positives:               	90
+False positives:              	410
+False negatives:              	302
+Documents evaluated:          	50
+
+## yso-fi basic ensemble eval
+
+Precision (doc avg):          	0.4300
+Recall (doc avg):             	0.5814
+F1 score (doc avg):           	0.4610
+Precision (subj avg):         	0.0043
+Recall (subj avg):            	0.0045
+F1 score (subj avg):          	0.0043
+Precision (weighted subj avg):	0.5191
+Recall (weighted subj avg):   	0.5485
+F1 score (weighted subj avg): 	0.5189
+Precision (microavg):         	0.4300
+Recall (microavg):            	0.5485
+F1 score (microavg):          	0.4821
+F1@5:                         	0.4564
+NDCG:                         	0.6228
+NDCG@5:                       	0.6800
+NDCG@10:                      	0.6502
+Precision@1:                  	0.8000
+Precision@3:                  	0.6600
+Precision@5:                  	0.5880
+True positives:               	215
+False positives:              	285
+False negatives:              	177
+Documents evaluated:          	50
+
+## Generating suggestions
+
+annif index -l 50 yso-fi jev-test-sets/fi/
+
+# English
+
+## Test set selection
+
+for i in `ls -l|grep -- '->'|grep '/2020/'|cut -c78-90`; do cp -H $i.* ~/git/Annif/jev-test-sets/en/; done
+
+## yso-mllm-en eval
+
+(annif) [oisuomin@annif-data-kk Annif]$ annif eval -j6 yso-mllm-en jev-test-sets/en/
+Precision (doc avg):          	0.1372
+Recall (doc avg):             	0.2345
+F1 score (doc avg):           	0.1577
+Precision (subj avg):         	0.0014
+Recall (subj avg):            	0.0016
+F1 score (subj avg):          	0.0014
+Precision (weighted subj avg):	0.2051
+Recall (weighted subj avg):   	0.1968
+F1 score (weighted subj avg): 	0.1819
+Precision (microavg):         	0.1372
+Recall (microavg):            	0.1968
+F1 score (microavg):          	0.1617
+F1@5:                         	0.1530
+NDCG:                         	0.2414
+NDCG@5:                       	0.2497
+NDCG@10:                      	0.2527
+Precision@1:                  	0.4127
+Precision@3:                  	0.2222
+Precision@5:                  	0.1810
+True positives:               	86
+False positives:              	541
+False negatives:              	351
+Documents evaluated:          	63
+
+## yso-en basic ensemble eval
+
+Precision (doc avg):          	0.4127
+Recall (doc avg):             	0.7077
+F1 score (doc avg):           	0.4755
+Precision (subj avg):         	0.0044
+Recall (subj avg):            	0.0047
+F1 score (subj avg):          	0.0044
+Precision (weighted subj avg):	0.5618
+Recall (weighted subj avg):   	0.5950
+F1 score (weighted subj avg): 	0.5583
+Precision (microavg):         	0.4127
+Recall (microavg):            	0.5950
+F1 score (microavg):          	0.4873
+F1@5:                         	0.4774
+NDCG:                         	0.6501
+NDCG@5:                       	0.6463
+NDCG@10:                      	0.6742
+Precision@1:                  	0.6667
+Precision@3:                  	0.6138
+Precision@5:                  	0.5556
+True positives:               	260
+False positives:              	370
+False negatives:              	177
+Documents evaluated:          	63
+
+## Generating suggestions
+
+annif index -l 50 yso-en jev-test-sets/en/
+

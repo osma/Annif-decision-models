@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+*.out
+logs/
+
+# Book blurbs are copyrighted and not part of the repository.
+# The .annif and .tsv files under jev-test-sets/ are kept.
+jev-test-sets/en/*.txt
+jev-test-sets/fi/*.txt
