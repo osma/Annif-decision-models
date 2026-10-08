@@ -152,16 +152,17 @@ averaged over documents. Reproducible with
 | d1-omni-600M (600M BF16) | 0.808 / 0.492 (geom a=0.6) | 0.806 / 0.477 (≈Annif, prod β≈0.1) |
 | d1-3B (3B Q8_0) | 0.811 / 0.497 (geom a=0.55) | 0.804 / 0.483 (≈Annif) |
 | lev (4B Q8_0) | 0.838 / 0.511 (prod β≈0.4) | 0.809 / 0.480 (linear α=0.95) |
-| Kev-4B (4B Q8_0) | 0.821 / **0.521** (gate 0.4) | 0.808 / **0.504** (gate 0.3) |
+| Kev-4B (4B Q8_0) | 0.821 / 0.521 (gate 0.4) | 0.808 / 0.504 (gate 0.3) |
 | Clef-Flash (9B Q4_K_M) | **0.850 / 0.527** (rrf k=30) | 0.816 / 0.503 (geom a=0.8) |
 | Bespoke-Nimble (9B Q4_K_M) | 0.840 / 0.504 (prod β=0.5) | 0.816 / 0.489 (linear α=0.85) |
 | OpenJev (27B Q4_K_M) | 0.837 / 0.522 (geom a=0.65) | **0.829 / 0.529** (geom a=0.65) |
 
-Kev's gate rows are the **best F1@5 of the whole project** on both
-languages (0.521 en / 0.504 fi, each above Annif) — a property of its
-sharply bimodal, thresholdable scores, not its ranking. Its best NDCG
-actually comes from a soft `geom` blend (0.835 en / 0.819 fi), which
-still trails the larger models on NDCG even though it ties the gate on
+Kev's gate rows are the **best F1@5 of the 4B class** on both languages
+(0.521 en / 0.504 fi, each above Annif) — a property of its sharply
+bimodal, thresholdable scores rather than its ranking. (Clef-Flash's
+`geom` blend takes the overall F1@5 lead at 0.536 en / 0.514 fi.) Its
+best NDCG comes from a soft `geom` blend (0.835 en / 0.819 fi), which
+trails the larger models on NDCG even though it matches the gate on
 F1@5.
 
 ### Raw results
@@ -216,8 +217,10 @@ non-gold = grey, correct-but-unsuggested = purple):
   Clef-Flash leads on en but is weaker on fi, so it is the better *en*
   model.
 - **Best precision / thresholdable:** **Kev-4B + `gate` blend** — the
-  best F1@5 of any model in both languages (0.521 en / 0.504 fi, each
-  above Annif). Its scores are sharply bimodal (only ~1% above 0.9,
+  best F1@5 of any model achieved with a hard threshold in both
+  languages (0.521 en / 0.504 fi, each above Annif; the overall F1@5
+  leader, Clef-Flash, only reaches it with a soft blend). Its scores are
+  sharply bimodal (only ~1% above 0.9,
   15–23% below 0.1), so a hard threshold keeps only the confident
   candidates and ranks them by Annif. Kev also beats its size class on
   co-subjects (photography 0.66, theosophy 0.58 vs 0.49/0.04 for the
