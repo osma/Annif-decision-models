@@ -20,7 +20,16 @@ from metrics import rank_by, strat_odds, strat_prod
 from unified_sweep import EXISTING
 
 RESULTS = Path("results")
-MODELS = ["laya", "d1-omni-600M", "d1-3B", "lev", "kev", "clefflash", "bespoke-nimble", "openjev"]
+MODELS = [
+    "laya",
+    "d1-omni-600M",
+    "d1-3B",
+    "lev",
+    "kev",
+    "clefflash",
+    "bespoke-nimble",
+    "openjev",
+]
 CONFIGS = ["sharp", "sharp-state"]
 
 
@@ -40,7 +49,10 @@ def main() -> None:
     print("Part 1: fixed constant, mean NDCG over 32 datasets")
     for label, fn in (
         ("prod beta=0.5 (old default)", lambda g: strat_prod(g, 0.5)),
-        *[(f"odds b={b:g}", (lambda b: lambda g: strat_odds(g, b))(b)) for b in (0.2, 0.3, 0.4, 0.5)],
+        *[
+            (f"odds b={b:g}", (lambda b: lambda g: strat_odds(g, b))(b))
+            for b in (0.2, 0.3, 0.4, 0.5)
+        ],
     ):
         acc = []
         for slug in MODELS:
@@ -74,9 +86,13 @@ def main() -> None:
                         if r > best:
                             best = r
                 gaps.append(oracle - best)
-                print(f"  {slug:16s} {lang} {cfg:12s} oracle {oracle:.4f}  grid {best:.4f}  gap {oracle - best:+.4f}")
+                print(
+                    f"  {slug:16s} {lang} {cfg:12s} oracle {oracle:.4f}  grid {best:.4f}  gap {oracle - best:+.4f}"
+                )
     gaps = sorted(gaps)
-    print(f"  mean gap {sum(gaps) / len(gaps):+.4f}  worst {gaps[0]:+.4f}  n={len(gaps)}")
+    print(
+        f"  mean gap {sum(gaps) / len(gaps):+.4f}  worst {gaps[0]:+.4f}  n={len(gaps)}"
+    )
 
 
 if __name__ == "__main__":

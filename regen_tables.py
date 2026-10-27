@@ -76,13 +76,13 @@ def main() -> None:
         all_cells[label] = cells
     top = max(ndc for cells in all_cells.values() for _, ndc in cells)
     for label, cells in all_cells.items():
-        out = [
-            f"**{text}**" if ndc == top else text for text, ndc in cells
-        ]
+        out = [f"**{text}**" if ndc == top else text for text, ndc in cells]
         print(f"| {label} | {out[0]} | {out[1]} | {out[2]} | {out[3]} |")
 
     # --- best blend table (incl. odds), best across the two configs ---
-    print("\n**Best blend per model (vs Annif: en 0.796 / 0.502, fi 0.804 / 0.485):**\n")
+    print(
+        "\n**Best blend per model (vs Annif: en 0.796 / 0.502, fi 0.804 / 0.485):**\n"
+    )
     print("| model | en best blend | fi best blend |")
     print("|---|---|---|")
     all_cells = {}
@@ -104,9 +104,7 @@ def main() -> None:
         all_cells[label] = cells
     top = max(ndc for cells in all_cells.values() for _, ndc in cells)
     for label, cells in all_cells.items():
-        out = [
-            f"**{text}**" if ndc == top else text for text, ndc in cells
-        ]
+        out = [f"**{text}**" if ndc == top else text for text, ndc in cells]
         print(f"| {label} | {out[0]} | {out[1]} |")
 
     # --- per-language best (for the per-language selection recommendation) ---
