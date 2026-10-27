@@ -72,12 +72,20 @@ class Vocab:
     def _concept_info(self, c) -> dict:
         broader = sorted({self._lbl(str(b)) for b in self.g.objects(c, SKOS.broader)})
         narrower = sorted({self._lbl(str(n)) for n in self.g.objects(c, SKOS.narrower)})
-        alts = [str(a) for a in self.g.objects(c, SKOS.altLabel)
-                if a.language in ("en", None)][:3]
+        alts = [
+            str(a)
+            for a in self.g.objects(c, SKOS.altLabel)
+            if a.language in ("en", None)
+        ][:3]
         defs = [str(d) for d in self.g.objects(c, SKOS.definition)]
         scope = [str(d) for d in self.g.objects(c, SKOS.scopeNote)]
-        return {"broader": broader, "narrower": narrower[:4], "alts": alts,
-                "def": defs[0] if defs else "", "scope": scope[0] if scope else ""}
+        return {
+            "broader": broader,
+            "narrower": narrower[:4],
+            "alts": alts,
+            "def": defs[0] if defs else "",
+            "scope": scope[0] if scope else "",
+        }
 
 
 def instr_for(variant: str, label: str, info: dict) -> str:
@@ -100,8 +108,10 @@ def instr_for(variant: str, label: str, info: dict) -> str:
         if info["broader"]:
             parts.append(f"part of the field '{', '.join(info['broader'][:2])}'")
         if info["narrower"]:
-            parts.append(f"more specific subjects under it include "
-                         f"{', '.join(info['narrower'])}")
+            parts.append(
+                f"more specific subjects under it include "
+                f"{', '.join(info['narrower'])}"
+            )
         if info["alts"]:
             parts.append(f"also known as {', '.join(info['alts'])}")
         if info["def"]:
@@ -109,9 +119,8 @@ def instr_for(variant: str, label: str, info: dict) -> str:
         elif info["scope"]:
             parts.append(f"scope: {info['scope']}")
     desc = ", ".join(parts) if parts else "a library subject heading"
-    return (
-        f"'{label}' is a library subject heading, {desc}. "
-        + core.format(label=label)
+    return f"'{label}' is a library subject heading, {desc}. " + core.format(
+        label=label
     )
 
 
@@ -153,8 +162,10 @@ def main() -> None:
             scores = ask(doc, variant, info)
             all_scores.setdefault(variant, {})[doc] = scores
             mg, mf = score(scores, doc)
-            print(f"  {variant}: gold={mg:.3f} fp={mf:.3f} margin={mg - mf:+.3f}",
-                  flush=True)
+            print(
+                f"  {variant}: gold={mg:.3f} fp={mf:.3f} margin={mg - mf:+.3f}",
+                flush=True,
+            )
             for lab in d["golds"] + d["fps"]:
                 tag = "G" if lab in d["golds"] else "f"
                 print(f"     [{tag}] {lab:35s} {scores[lab]:.3f}")
@@ -162,8 +173,10 @@ def main() -> None:
     for variant in variants:
         mg = [score(s, doc)[0] for doc, s in all_scores[variant].items()]
         mf = [score(s, doc)[1] for doc, s in all_scores[variant].items()]
-        print(f"  {variant}: gold={sum(mg)/len(mg):.3f} fp={sum(mf)/len(mf):.3f} "
-              f"margin={sum(mg)/len(mg) - sum(mf)/len(mf):+.3f}")
+        print(
+            f"  {variant}: gold={sum(mg)/len(mg):.3f} fp={sum(mf)/len(mf):.3f} "
+            f"margin={sum(mg)/len(mg) - sum(mf)/len(mf):+.3f}"
+        )
     print("\n== sample question texts (V10/V11) ==")
     for lab in ["espionage", "spies", "food recipes", "voyages and travels"]:
         if lab in info:

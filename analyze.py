@@ -59,11 +59,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Input rerank CSV (e.g. results/rerank-en-lev-sharp.csv)",
     )
     p.add_argument(
-        "--alpha", type=float, default=0.5,
+        "--alpha",
+        type=float,
+        default=0.5,
         help="Dot transparency, 0..1 (default: %(default)s)",
     )
     p.add_argument(
-        "--size", type=float, default=18,
+        "--size",
+        type=float,
+        default=18,
         help="Dot size in points^2 (default: %(default)s)",
     )
     return p.parse_args(argv)
@@ -99,16 +103,12 @@ def main(argv: list[str] | None = None) -> None:
         annif_rows = doc[doc["source"] == "annif"].sort_values(
             "annif_score", ascending=False
         )
-        annif_rel = (
-            annif_rows["in_gold"].astype(str).str.lower().eq("true").tolist()
-        )
+        annif_rel = annif_rows["in_gold"].astype(str).str.lower().eq("true").tolist()
         annif_ndcg.append(ndcg(annif_rel))
         annif_f1.append(f1_at_k(annif_rel, K))
 
         noul_rows = doc.sort_values("noul_score", ascending=False)
-        noul_rel = (
-            noul_rows["in_gold"].astype(str).str.lower().eq("true").tolist()
-        )
+        noul_rel = noul_rows["in_gold"].astype(str).str.lower().eq("true").tolist()
         noul_ndcg.append(ndcg(noul_rel))
         noul_f1.append(f1_at_k(noul_rel, K))
 
@@ -146,20 +146,29 @@ def main(argv: list[str] | None = None) -> None:
     # Draw non-gold first so the "signal" points sit on top.
     if len(annif_nongold):
         ax.scatter(
-            annif_nongold["annif_score"], annif_nongold["noul_score"],
-            c=COLOR_NON_GOLD, alpha=args.alpha, s=args.size,
+            annif_nongold["annif_score"],
+            annif_nongold["noul_score"],
+            c=COLOR_NON_GOLD,
+            alpha=args.alpha,
+            s=args.size,
             label="Annif suggestion, not gold",
         )
     if len(annif_gold):
         ax.scatter(
-            annif_gold["annif_score"], annif_gold["noul_score"],
-            c=COLOR_GOLD, alpha=args.alpha, s=args.size,
+            annif_gold["annif_score"],
+            annif_gold["noul_score"],
+            c=COLOR_GOLD,
+            alpha=args.alpha,
+            s=args.size,
             label="Annif suggestion, gold",
         )
     if len(gold_extra):
         ax.scatter(
-            [GOLD_EXTRA_X] * len(gold_extra), gold_extra["noul_score"],
-            c=COLOR_GOLD_EXTRA, alpha=args.alpha, s=args.size,
+            [GOLD_EXTRA_X] * len(gold_extra),
+            gold_extra["noul_score"],
+            c=COLOR_GOLD_EXTRA,
+            alpha=args.alpha,
+            s=args.size,
             label="Gold, not suggested (no Annif score, x=0)",
         )
 
@@ -170,10 +179,14 @@ def main(argv: list[str] | None = None) -> None:
     ax.legend()
 
     ax.text(
-        0.99, 0.99, metrics_text,
+        0.99,
+        0.99,
+        metrics_text,
         transform=ax.transAxes,
-        ha="right", va="top",
-        family="monospace", fontsize=9,
+        ha="right",
+        va="top",
+        family="monospace",
+        fontsize=9,
         bbox=dict(boxstyle="round", fc="white", ec="0.5", alpha=0.85),
     )
 

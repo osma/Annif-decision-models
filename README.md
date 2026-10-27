@@ -106,6 +106,7 @@ and noul baselines:
 | `linear` | `α·norm(annif) + (1-α)·norm(noul)` (clm.py baseline) | α |
 | `prod`   | `norm(annif) · noul^β` | β |
 | `rrf`    | `1/(k+rank_annif) + 1/(k+rank_noul)` | k |
+| `odds`   | the dm_rerank backend formula: `norm(annif) · ((noul+ε)/(1−noul+ε))^b · σ((noul−τ)/0.1)`, then squashed by `x/(1+x)` (τ=−1, gate off). Unlike `prod`, the odds factor can exceed 1, so b > 1 can *boost* candidates above their source score | b |
 
 ```bash
 ./.venv/bin/python blend.py results/rerank-en-lev-sharp-state.csv results/rerank-fi-lev-sharp.csv
@@ -118,9 +119,9 @@ The best hyperparameter per strategy is marked with `*`.
 Decision models were run with the `sharp` predicate, with and
 without the built-in state-prefix rules (`--state-rules`). Raw scores are
 the model's noul alone; "best blend" is the top merge from
-[`blend.py`](blend.py) — `prod`/`geom`/`rrf` for most models, but the
-**`gate`** (hard threshold) method for Kev, whose scores are sharply
-bimodal and thus best used as a filter.
+[`blend.py`](blend.py) — the **`odds`** (dm_rerank backend) formula for
+most en models, `geom` for the best fi results, and `gate` still
+delivers Kev's best F1@5 thanks to its sharply bimodal scores.
 
 **Raw model scores (NDCG / F1@5):**
 
@@ -148,22 +149,30 @@ averaged over documents. Reproducible with
 | model | en best blend | fi best blend |
 |---|---|---|
 | Annif (baseline, no model) | 0.796 / 0.502 | 0.804 / 0.485 |
-| Laya (421M BF16) | 0.823 / 0.505 (geom a=0.55) | 0.804 / 0.485 (≈Annif) |
-| d1-omni-600M (600M BF16) | 0.808 / 0.492 (geom a=0.6) | 0.806 / 0.477 (≈Annif, prod β≈0.1) |
-| d1-3B (3B Q8_0) | 0.811 / 0.497 (geom a=0.55) | 0.804 / 0.483 (≈Annif) |
-| lev (4B Q8_0) | 0.838 / 0.511 (prod β≈0.4) | 0.809 / 0.480 (linear α=0.95) |
-| Kev-4B (4B Q8_0) | 0.821 / 0.521 (gate 0.4) | 0.808 / 0.504 (gate 0.3) |
-| Clef-Flash (9B Q4_K_M) | **0.850 / 0.527** (rrf k=30) | 0.816 / 0.503 (geom a=0.8) |
-| Bespoke-Nimble (9B Q4_K_M) | 0.840 / 0.504 (prod β=0.5) | 0.816 / 0.489 (linear α=0.85) |
-| OpenJev (27B Q4_K_M) | 0.837 / 0.522 (geom a=0.65) | **0.829 / 0.529** (geom a=0.65) |
+| Laya (421M BF16) | 0.823 / 0.505 (geom a=0.55) | 0.805 / 0.484 (odds b=0.1) |
+| d1-omni-600M (600M BF16) | 0.815 / 0.498 (odds b=0.2) | 0.806 / 0.477 (prod β=0.1) |
+| d1-3B (3B Q8_0) | 0.821 / 0.506 (odds b=0.4) | 0.804 / 0.485 (≈Annif) |
+| lev (4B Q8_0) | 0.842 / 0.509 (odds b=0.3) | 0.809 / 0.480 (linear α=0.95) |
+| Kev-4B (4B Q8_0) | 0.838 / 0.514 (odds b=0.7) | 0.819 / 0.511 (geom a=0.55) |
+| Clef-Flash (9B Q4_K_M) | **0.861 / 0.523** (odds b=0.7) | 0.816 / 0.503 (geom a=0.8) |
+| Bespoke-Nimble (9B Q4_K_M) | 0.843 / 0.522 (odds b=0.3) | 0.816 / 0.489 (linear α=0.85) |
+| OpenJev (27B Q4_K_M) | 0.850 / 0.526 (odds b=0.5) | **0.829 / 0.529** (geom a=0.65) |
 
-Kev's gate rows are the **best F1@5 of the 4B class** on both languages
-(0.521 en / 0.504 fi, each above Annif) — a property of its sharply
-bimodal, thresholdable scores rather than its ranking. (Clef-Flash's
-`geom` blend takes the overall F1@5 lead at 0.536 en / 0.514 fi.) Its
-best NDCG comes from a soft `geom` blend (0.835 en / 0.819 fi), which
-trails the larger models on NDCG even though it matches the gate on
-F1@5.
+The new `odds` strategy (the dm_rerank backend's blend) is the best
+per-dataset merge on 14 of the 32 model×language×config datasets — most
+of the en ones — and never trails the previous best by more than
+~0.005. Where the old methods keep winning (several fi runs, the
+weakest models) the best `odds` value is a small b (0.1–0.3), i.e. the
+same source-dominant nudge the `prod`/`linear` blends give there; the
+b > 1 *boost* regime only pays off on corpora where the source buries
+golds deep in the candidate pool (see the theses validation in the
+dm_rerank PR description).
+
+Kev's hard **`gate`** still delivers the **best F1@5 of the 4B class**
+on both languages (0.521 en / 0.504 fi, each above Annif) — a property
+of its sharply bimodal, thresholdable scores rather than its ranking.
+(Clef-Flash takes the overall F1@5 lead at 0.536 en / 0.514 fi, with a
+soft blend.)
 
 ### Raw results
 
@@ -202,20 +211,20 @@ non-gold = grey, correct-but-unsuggested = purple):
 - **Overall best (single model):** **OpenJev + `--state-rules`** is the
   strongest all-rounder — it posts the best fi result of any model
   (0.829 / 0.529, beating Annif on both metrics) and stays competitive on
-  en (0.837 / 0.522). With Bespoke-Nimble it is one of the two models
-  where the state rules clearly help in *both* languages, and it posts
-  the stronger gain.
+  en (0.850 / 0.526, odds b=0.5). With Bespoke-Nimble it is one of the
+  two models where the state rules clearly help in *both* languages, and
+  it posts the stronger gain.
 - **Bespoke-Nimble (9B)** — a solid mid-tier model: third-best en
-  blend (0.840 / 0.504), behind Clef-Flash and OpenJev, and a
+  blend (0.843 / 0.522, odds b=0.3), behind Clef-Flash and OpenJev, and a
   useful +0.03…+0.04 state-rules lift in both languages. Qualitative checks
   show it is more single-subject-locked than OpenJev: it caught
   `photography` in a dance photo book (0.49, better than lev/Clef) but
   missed co-subjects OpenJev caught (bilingual notebooks' `English`
   ~0.13, explicitly-named `theosophy`/`anthroposophy` 0.03–0.04 —
   lowest of the models tested).
-- **Best en result:** **Clef-Flash + `--state-rules`** (0.850 / 0.527).
-  Clef-Flash leads on en but is weaker on fi, so it is the better *en*
-  model.
+- **Best en result:** **Clef-Flash + `--state-rules`** (0.861 / 0.523,
+  odds b=0.7). Clef-Flash leads on en but is weaker on fi, so it is the
+  better *en* model.
 - **Best precision / thresholdable:** **Kev-4B + `gate` blend** — the
   best F1@5 of any model achieved with a hard threshold in both
   languages (0.521 en / 0.504 fi, each above Annif; the overall F1@5
@@ -229,7 +238,7 @@ non-gold = grey, correct-but-unsuggested = purple):
   figures are from the plain (no state-rules) run — state rules give no
   measurable lift for Kev (−0.01 en / ≈0 fi), so use it without them.
 - **Per-language selection** (if acceptable in production): Clef-Flash for
-  en, OpenJev for fi → 0.850 en / 0.829 fi, the highest combined result.
+  en, OpenJev for fi → 0.861 en / 0.829 fi, the highest combined result.
 - **lev** — mid-tier on raw scores (below the 9B class, above the d1
   models), but it is the model the original query-formulation
   experiments (predicate phrasing, state rules, question types) were
@@ -258,9 +267,13 @@ non-gold = grey, correct-but-unsuggested = purple):
   models, but **strongly positive for OpenJev (+0.037 en / +0.049 fi)
   and Bespoke-Nimble (+0.034 / +0.044) in both languages**; the rule
   corrects form/genre false positives that dominate in those models.
-- **Annif-dominant blending** (`prod`/`geom`/`rrf`, weight ≈0.7–0.9 on
-  Annif) is the right way to combine the two signals; the model score
-  adds a small, real correction on top of Annif.
+- **Annif-dominant blending** is the right way to combine the two
+  signals; the model score adds a small, real correction on top of Annif.
+  The **`odds`** (dm_rerank backend) formula is the strongest single
+  choice here — best NDCG on 14/32 datasets — and it subsumes the
+  older source-dominant blends (small `b` ≈ 0.1–0.4 gives the same
+  nudge `prod`/`linear` gave); its extra `b > 1` boost only helps on
+  corpora where the source buries golds deep in the candidate pool.
 
 ### What did not work (tested and dropped)
 
@@ -346,7 +359,7 @@ than one-paragraph blurbs, or domain-tuned models.
 
 ### Blend methods — properties
 
-The five strategies in [`blend.py`](blend.py) (rank functions in
+The six strategies in [`blend.py`](blend.py) (rank functions in
 [`metrics.py`](metrics.py:81)) differ in *which information
 representation of the noul score they use*, and the right one is
 determined by the shape of the model's score distribution, not by the
@@ -355,10 +368,11 @@ dataset:
 | method | idea | works well when | failure mode |
 |---|---|---|---|
 | `gate` [`metrics.py`](metrics.py:81) | keep `noul ≥ τ`, drop the rest, Annif order inside each group | **bimodal, calibrated scores** (Kev: ~1% > 0.9, 15–23% < 0.1) — trustworthy low scores become a precision filter | unimodal scores demote true positives → at or below Annif; discards all ranking info below τ |
-| `geom` [`metrics.py`](metrics.py:95) | `norm(annif)^a · norm(noul)^(1−a)` | soft corroboration; most robust — best NDCG in 15/32 dataset runs, incl. the best fi (OpenJev 0.829) | per-doc min-max "zero" is the pool minimum, not absolute non-relevance |
-| `linear` [`metrics.py`](metrics.py:105) | `α·norm(annif) + (1−α)·norm(noul)` (the [`clm.py`](clm.py:329) baseline) | weak/noisy model signal — a small additive nudge never hurts | no interaction term; loses ~0.01–0.02 to geom/prod on strong models |
-| `prod` [`metrics.py`](metrics.py:112) | `norm(annif) · noul^β`, **raw** (unnormalized) noul | calibrated, meaningful absolute levels (lev, Clef, OpenJev) — a very frequent winner (13/32 runs) | penalizes low-level miscalibrated scores (Kev, Laya) |
-| `rrf` [`metrics.py`](metrics.py:119) | `1/(k+rank_annif) + 1/(k+rank_noul)` — ranks only, no scores | incomparable scales but complementary *orderings* (one-off win: Clef en state k=30 → 0.850) | amplifies a *bad* ordering (Laya fi → 0.704); discards magnitude |
+| `geom` [`metrics.py`](metrics.py:95) | `norm(annif)^a · norm(noul)^(1−a)` | soft corroboration; still best on several fi runs, incl. the best fi (OpenJev 0.829) | per-doc min-max "zero" is the pool minimum, not absolute non-relevance |
+| `linear` [`metrics.py`](metrics.py:105) | `α·norm(annif) + (1−α)·norm(noul)` (the [`clm.py`](clm.py:329) baseline) | weak/noisy model signal — a small additive nudge never hurts | no interaction term; loses to the multiplicative blends on strong models |
+| `prod` [`metrics.py`](metrics.py:112) | `norm(annif) · noul^β`, **raw** (unnormalized) noul | calibrated, meaningful absolute levels (lev, Clef, OpenJev) | penalizes low-level miscalibrated scores (Kev, Laya); noul^β ≤ 1 so it can only pull scores *down* |
+| `rrf` [`metrics.py`](metrics.py:119) | `1/(k+rank_annif) + 1/(k+rank_noul)` — ranks only, no scores | incomparable scales but complementary *orderings* | amplifies a *bad* ordering (Laya fi → 0.704); discards magnitude; now superseded by `odds` |
+| `odds` [`metrics.py`](metrics.py:129) | the dm_rerank backend formula: `norm(annif) · ((noul+ε)/(1−noul+ε))^b · σ((noul−τ)/0.1)`, squashed by `x/(1+x)`; **b > 1 can boost** a confident "yes" above its source score | broad winner (14/32 best-NDCG datasets, most en); subsumes the `prod` nudge at small b | the boost is useless (and mildly harmful) when the source pool is already well-ordered — that is the common blurb case |
 
 Across the board, the model's ordering quality dominates: every model
 above Laya beats Annif by a comparable margin (~0.01–0.04 NDCG)
@@ -367,64 +381,79 @@ matters for F1@5/precision (where `gate` + Kev stands out).
 
 ### Recommended production blending
 
-- **Default (any model):** `prod` with **β = 0.5** (raw noul). A single
-  fixed constant that averages 0.814 NDCG over the 16 model×language
-  combinations — within 0.005 of the honest cross-validated per-dataset
-  selection protocol (0.819) at zero tuning cost — with no catastrophic
-  failure mode: with a weak model it degrades gracefully to ≈Annif.
-  Expected effect: **en +0.01…+0.04 NDCG** over Annif-only (positive
-  for every model); fi −0.01…+0.02 (within noise, negative for a few
-  weak models).
-- **Kev (or any calibrated bimodal model):** `gate` instead of `prod`,
-  with per-language thresholds — **τ = 0.4 en / 0.3 fi** (fi scores sit
-  lower; τ = 0.4 on fi is below Annif). Rank survivors in plain Annif
-  order (gate-then-soft-rank hybrids gain ≤ +0.006, noise-level). Use
-  the plain sharp question — state rules give no measurable lift for Kev.
-  Re-check the score histogram on ~100 deployment docs; if the bimodality
-  is gone, fall back to `prod` β = 0.5.
-- **Don't ship:** `rrf` (one-off win, amplifies bad orderings) or
-  per-dataset parameter selection — 5-fold CV over 50–63 docs selects a
-  different method per fold (held-out swings 0.67–0.92 within one
-  dataset), and its honest 0.819 average only marginally beats fixed
-  β = 0.5 (0.814) while requiring a labeled validation set.
+- **Default (any model):** **`odds` with `b = 0.3`** (gate off, τ = −1).
+  A single fixed constant that averages 0.814 NDCG over the 32
+  model×language×config datasets — the same average as the previous
+  default (`prod` β = 0.5, 0.814) — within ~0.008 of the per-dataset
+  best (0.822) at zero tuning cost, with no catastrophic failure mode:
+  with a weak model it degrades gracefully to ≈Annif. Unlike `prod`,
+  it can also *boost* when `b` is raised, so it is the safe superset of
+  the old default. Expected effect: **en +0.01…+0.04 NDCG** over
+  Annif-only (positive for every model); fi −0.01…+0.02 (within noise,
+  negative for a few weak models).
+- **Deep-pool corpora (full text, not blurbs):** tune `b` up to ~1.5 —
+  the boost regime only pays off when the source buries golds deep in
+  the candidate pool (see the theses validation in the dm_rerank PR
+  description: +0.016 NDCG@10 validate / +0.028 test at b ≈ 1.45).
+- **Kev (or any calibrated bimodal model):** `gate` still delivers the
+  best F1@5, with per-language thresholds — **τ = 0.4 en / 0.3 fi** (fi
+  scores sit lower; τ = 0.4 on fi is below Annif). Rank survivors in
+  plain Annif order (gate-then-soft-rank hybrids gain ≤ +0.006,
+  noise-level). Use the plain sharp question — state rules give no
+  measurable lift for Kev. Re-check the score histogram on ~100
+  deployment docs; if the bimodality is gone, fall back to `odds`
+  b = 0.3.
+- **Don't ship:** `rrf` (one-off win, amplifies bad orderings, now
+  superseded by `odds`) or per-dataset parameter selection — 5-fold CV
+  over 50–63 docs selects a different method per fold (held-out swings
+  0.67–0.92 within one dataset), and its honest 0.822 average only
+  marginally beats the fixed default (0.814) while requiring a labeled
+  validation set.
 
 ### Optuna search space for unknown model + dataset
 
 When the decision model (and possibly the validation corpus) is not one
-of the models tested above, replace the method choice with a
-**2-parameter continuous space** that all known winners live in:
+of the models tested above, replace the method choice with the
+**2-parameter continuous space used by the dm_rerank backend**:
 
 ```
-score = norm(annif) · noul^b · σ((noul − τ)/0.1)
-b   ∈ [0, 1]        # noul strength
-τ   ∈ [−0.25, 0.5]  # gate threshold (s fixed at 0.1)
+raw   = norm(annif) · ((noul + ε) / (1 − noul + ε))^b · σ((noul − τ)/0.1)
+score = raw / (1 + raw)            # monotonic squash into [0, 1)
+b   ∈ [0, 2]        # 0 = source only; (0,1) = nudge; >1 = boost
+τ   ∈ [−1.0, 0.5]  # gate threshold (width 0.1; −1.0 = off)
 ```
 
-- **b = 0, τ = −0.25** → σ ≈ 1 → pure Annif (the floor, as a limit
-  point rather than a special case — the baseline is Annif's raw output
-  anyway).
-- **b > 0, τ = −0.25** → the prod/geom soft-blend family.
+- **b = 0, τ = −1.0** → pure Annif (the exact no-op floor — the
+  baseline is Annif's raw output anyway).
+- **b ∈ (0, 1), τ = −1.0** → the source-dominant soft-blend family that
+  `prod`/`geom`/`linear` represent; small b is what wins on the blurb
+  datasets.
+- **b > 1** → the *boost* regime, only useful on deep-pool corpora
+  (full text) where the source buries golds; see the theses validation
+  in the dm_rerank PR description.
 - **b = 0, τ ∈ [0.2, 0.5]** → the gate family (the hard gate expressed
   as a narrow sigmoid, which is what makes the space continuous and
   TPE-searchable; verified to match the hard gate on Kev).
-- **Use raw noul** (not min-max): `noul` is P(yes) ∈ [0,1] by the System
-  One API, so it is bounded and comparable across unknown models,
-  whereas min-max couples the blend to the per-document candidate pool.
+- The final **squash** `x/(1+x)` keeps the output on the [0, 1] score
+  scale: a boost can make `raw` exceed 1, and without the squash the
+  score would be clamped into a tie by the suggestion machinery.
 
 **Verification:** on all 20 model×dataset runs (the five models lev,
 Kev, Clef-Flash, OpenJev and Bespoke-Nimble, en/fi × with/without state
-rules), the best point of this grid matches the measured oracle (best of
-the 5 methods + the 168-point gated-power-blend family) with a **mean
-gap of +0.0006 NDCG** (worst single dataset −0.005, an rrf-only win) —
-effectively lossless compression. Kev's gates land at b ≈ 0, τ =
-0.2–0.4; OpenJev/Bespoke prod blends at b = 0.4–0.9, τ = −0.25.
+rules), the best point of a coarse grid of this space (b in 0.1 steps,
+τ ∈ {−1.0, −0.25, 0.2, 0.3, 0.4, 0.5}) matches the per-dataset oracle
+(best of the six `blend.py` methods) with a **mean gap of +0.0001 NDCG
+(worst −0.0045)** — effectively lossless compression, and on a few
+datasets the grid even *beats* the six-method oracle. Kev's gates land
+at b ≈ 0, τ = 0.2–0.4; the blurb-dataset soft blends at small b
+(0.1–0.5), τ = −1.0.
 
 **Optuna usage:**
 
 ```python
 def objective(trial):
-    b   = trial.suggest_float("b",   0.0,  1.0)
-    tau = trial.suggest_float("tau", -0.25, 0.5)
+    b   = trial.suggest_float("b",   0.0,  2.0)
+    tau = trial.suggest_float("tau", -1.0, 0.5)
     # internal 5-fold CV over the validation set, on the PRODUCTION metric
     return cv_ndcg_or_f1_at_5(rank_with(b, tau))
 

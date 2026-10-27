@@ -1,0 +1,14 @@
+{
+  "project": "yso-dm-en",
+  "corpus": "/home/oisuomin/git/Annif-corpora/fulltext/jyu-theses/eng-test",
+  "endpoint": "http://localhost:8080/v1/systemone",
+  "model": "",
+  "model-strength": 0.9783,
+  "gate-threshold": 0.4969,
+  "max-candidates": 50,
+  "state-transform": "limit(10000)",
+  "limit": 100,
+  "docs": 300,
+  "rows": 15000,
+  "timestamp": "2026-10-26T14:17:59.300774+00:00"
+}

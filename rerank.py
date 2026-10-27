@@ -32,9 +32,17 @@ import requests
 # ---------------------------------------------------------------------------
 
 CSV_COLUMNS = [
-    "isbn", "lang", "yso_uri", "label", "source",
-    "annif_score", "annif_rank", "noul_score", "in_gold",
-    "instruction", "model",
+    "isbn",
+    "lang",
+    "yso_uri",
+    "label",
+    "source",
+    "annif_score",
+    "annif_rank",
+    "noul_score",
+    "in_gold",
+    "instruction",
+    "model",
 ]
 
 # Question templates per style, each with a {label} slot.
@@ -73,6 +81,7 @@ STATE_RULES = (
 # Data model
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Candidate:
     """A single subject candidate for one document."""
@@ -88,16 +97,19 @@ class Candidate:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Rerank Annif suggestions with a Jev-like decision model.",
     )
     p.add_argument(
-        "--dataset-dir", default="jev-test-sets/en",
+        "--dataset-dir",
+        default="jev-test-sets/en",
         help="Directory containing .txt/.annif/.tsv files (default: %(default)s)",
     )
     p.add_argument(
-        "--lang", default="en",
+        "--lang",
+        default="en",
         help="Language tag (default: %(default)s)",
     )
     p.add_argument(
@@ -111,41 +123,52 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Model id (env ANNIF_JEV_MODEL, default: {DEFAULT_MODEL})",
     )
     p.add_argument(
-        "--output", default="-",
+        "--output",
+        default="-",
         help="Output CSV path, or '-' for stdout (default: %(default)s)",
     )
     p.add_argument(
-        "--question-style", default="sharp",
+        "--question-style",
+        default="sharp",
         choices=list(INSTRUCTIONS),
         help="noul question phrasing: 'plain' (topically about) or 'sharp' "
-             "(central subject, rejects passing mentions; the better of the "
-             "two) (default: %(default)s)",
+        "(central subject, rejects passing mentions; the better of the "
+        "two) (default: %(default)s)",
     )
     p.add_argument(
-        "--state-rules", action="store_true",
+        "--state-rules",
+        action="store_true",
         help="Prepend the built-in indexing-rules prefix to the document "
-             "state for every question (best result found on the en set; "
-             "see README). Takes effect unless --state-prefix is also given.",
+        "state for every question (best result found on the en set; "
+        "see README). Takes effect unless --state-prefix is also given.",
     )
     p.add_argument(
-        "--state-prefix", default="",
+        "--state-prefix",
+        default="",
         help="Custom text prepended to the document state for every "
-             "question. Overrides --state-rules if both are given.",
+        "question. Overrides --state-rules if both are given.",
     )
     p.add_argument(
-        "--limit", type=int, default=50,
+        "--limit",
+        type=int,
+        default=50,
         help="Max Annif suggestions per doc (default: %(default)s)",
     )
     p.add_argument(
-        "--retries", type=int, default=2,
+        "--retries",
+        type=int,
+        default=2,
         help="Retries on API failure (default: %(default)s)",
     )
     p.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Print the first request payload and exit without calling the API",
     )
     p.add_argument(
-        "--max-docs", type=int, default=0,
+        "--max-docs",
+        type=int,
+        default=0,
         help="Process only the first N documents (0 = all, default)",
     )
     return p.parse_args(argv)
@@ -155,11 +178,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 # Data loading
 # ---------------------------------------------------------------------------
 
+
 def find_books(dataset_dir: Path) -> list[Path]:
     """Return sorted list of .txt paths that also have a matching .annif."""
     return sorted(
-        txt for txt in dataset_dir.glob("*.txt")
-        if txt.with_suffix(".annif").exists()
+        txt for txt in dataset_dir.glob("*.txt") if txt.with_suffix(".annif").exists()
     )
 
 
@@ -176,13 +199,15 @@ def parse_annif(path: Path, limit: int) -> list[Candidate]:
             parts = line.split("\t")
             if len(parts) < 3:
                 continue
-            candidates.append(Candidate(
-                uri=parts[0].strip("<>"),
-                label=parts[1],
-                source="annif",
-                annif_score=float(parts[2]),
-                annif_rank=rank,
-            ))
+            candidates.append(
+                Candidate(
+                    uri=parts[0].strip("<>"),
+                    label=parts[1],
+                    source="annif",
+                    annif_score=float(parts[2]),
+                    annif_rank=rank,
+                )
+            )
     return candidates
 
 
@@ -216,17 +241,20 @@ def build_candidates(
     annif_uris = {c.uri for c in candidates}
     for entry in gold:
         if entry["uri"] not in annif_uris:
-            candidates.append(Candidate(
-                uri=entry["uri"],
-                label=entry["label"],
-                source="gold_extra",
-            ))
+            candidates.append(
+                Candidate(
+                    uri=entry["uri"],
+                    label=entry["label"],
+                    source="gold_extra",
+                )
+            )
     return candidates
 
 
 # ---------------------------------------------------------------------------
 # API client
 # ---------------------------------------------------------------------------
+
 
 def build_instructions(candidates: list[Candidate], style: str) -> list[str]:
     """Build the instruction string for each candidate using the given style."""
@@ -281,6 +309,7 @@ def extract_noul_scores(response: dict[str, Any]) -> dict[str, float | None]:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def process_book(
     txt_path: Path,
@@ -364,8 +393,8 @@ def main(argv: list[str] | None = None) -> None:
             writer.writeheader()
 
         for doc_idx, txt_path in enumerate(books, 1):
-            isbn, state, candidates, instructions, gold_uris = (
-                process_book(txt_path, args)
+            isbn, state, candidates, instructions, gold_uris = process_book(
+                txt_path, args
             )
             payload = build_payload(args.model, state, instructions)
 
@@ -394,25 +423,25 @@ def main(argv: list[str] | None = None) -> None:
 
             for i, cand in enumerate(candidates):
                 qid = str(i)
-                writer.writerow({
-                    "isbn": isbn,
-                    "lang": args.lang,
-                    "yso_uri": cand.uri,
-                    "label": cand.label,
-                    "source": cand.source,
-                    "annif_score": (
-                        cand.annif_score
-                        if cand.annif_score is not None else ""
-                    ),
-                    "annif_rank": (
-                        cand.annif_rank
-                        if cand.annif_rank is not None else ""
-                    ),
-                    "noul_score": noul_scores.get(qid, ""),
-                    "in_gold": "true" if cand.uri in gold_uris else "false",
-                    "instruction": instructions[i],
-                    "model": args.model,
-                })
+                writer.writerow(
+                    {
+                        "isbn": isbn,
+                        "lang": args.lang,
+                        "yso_uri": cand.uri,
+                        "label": cand.label,
+                        "source": cand.source,
+                        "annif_score": (
+                            cand.annif_score if cand.annif_score is not None else ""
+                        ),
+                        "annif_rank": (
+                            cand.annif_rank if cand.annif_rank is not None else ""
+                        ),
+                        "noul_score": noul_scores.get(qid, ""),
+                        "in_gold": "true" if cand.uri in gold_uris else "false",
+                        "instruction": instructions[i],
+                        "model": args.model,
+                    }
+                )
 
         dest = "stdout" if to_stdout else str(output_path)
         print(f"\nDone. Results written to {dest}", file=sys.stderr)

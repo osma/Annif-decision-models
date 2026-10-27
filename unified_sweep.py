@@ -20,11 +20,11 @@ Limit cases (verified at runtime against the existing strategies):
     a=1, lam=0, tau=None     -> strat_prod(beta=b)
 
 Protocol (to avoid pure overfitting on 50-63 doc datasets):
-  1. recompute per-dataset best of the five existing methods;
+  1. recompute per-dataset best of the existing methods;
   2. per-dataset best GPB (optimistic upper bound);
   3. SELECT GPB params on en-sharp per model;
   4. evaluate the SAME params on en-state and both fi datasets (transfer);
-  5. paired bootstrap of GPB(en-sel) vs best-of-5 on fi-sharp (is it noise?).
+  5. paired bootstrap of GPB(en-sel) vs best existing on fi-sharp (is it noise?).
 """
 import random
 from pathlib import Path
@@ -36,8 +36,15 @@ from blend import load_docs, evaluate
 # Rerank output CSVs live in results/ (see run_model.sh).
 RESULTS = "results"
 from metrics import (
-    ndcg, minmax, rank_by,
-    strat_gate, strat_geom, strat_linear, strat_prod, strat_rrf,
+    ndcg,
+    minmax,
+    rank_by,
+    strat_gate,
+    strat_geom,
+    strat_linear,
+    strat_odds,
+    strat_prod,
+    strat_rrf,
 )
 
 
@@ -47,9 +54,9 @@ def strat_gpb(df, a: float, b: float, lam: float, tau, s) -> list[int]:
     nr = df["noul_score"].to_numpy(dtype=float)
     t = lam * nn + (1.0 - lam) * nr
     if b == 0:
-        blend = na ** a
+        blend = na**a
     else:
-        blend = na ** a * np.where(t > 0, t ** b, 0.0)
+        blend = na**a * np.where(t > 0, t**b, 0.0)
     if tau is None:
         gate = 1.0
     elif s == 0:
@@ -62,13 +69,22 @@ def strat_gpb(df, a: float, b: float, lam: float, tau, s) -> list[int]:
     return [idx[i] for i in order]
 
 
-GATES = [(None, None), (0.3, 0.0), (0.4, 0.0), (0.5, 0.0),
-         (0.3, 0.15), (0.4, 0.15), (0.5, 0.15)]
-GRID = [(a, b, lam, tau, s)
-        for a in (0.85, 1.0)
-        for b in (0.0, 0.3, 0.5, 0.8)
-        for lam in (0.0, 0.5, 1.0)
-        for (tau, s) in GATES]
+GATES = [
+    (None, None),
+    (0.3, 0.0),
+    (0.4, 0.0),
+    (0.5, 0.0),
+    (0.3, 0.15),
+    (0.4, 0.15),
+    (0.5, 0.15),
+]
+GRID = [
+    (a, b, lam, tau, s)
+    for a in (0.85, 1.0)
+    for b in (0.0, 0.3, 0.5, 0.8)
+    for lam in (0.0, 0.5, 1.0)
+    for (tau, s) in GATES
+]
 
 EXISTING = [
     ("gate", "gate", [0.3, 0.35, 0.4, 0.45, 0.5], strat_gate),
@@ -76,6 +92,15 @@ EXISTING = [
     ("linear", "alpha", [0.8, 0.85, 0.87, 0.9, 0.92, 0.95], strat_linear),
     ("prod", "beta", [0.1, 0.2, 0.3, 0.4, 0.5], strat_prod),
     ("rrf", "k", [1, 3, 5, 10, 20, 30], strat_rrf),
+    # the dm_rerank backend's odds-ratio blend (gate off, tau=-1.0): unlike
+    # the other methods its noul factor is not bounded by 1, so b > 1 can
+    # boost candidates above their source score
+    (
+        "odds",
+        "b",
+        [0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1.0, 1.2, 1.45, 1.5, 1.7, 2.0],
+        lambda df, b: strat_odds(df, b),
+    ),
 ]
 
 
@@ -130,8 +155,7 @@ def bootstrap_diff(docs, fn_a, fn_b, n_boot=2000, seed=0):
             db += ndcg([bool(df.at[j, "in_gold"]) for j in fn_b(df)])
         diffs.append((da - db) / n)
     diffs.sort()
-    return (sum(diffs) / n_boot,
-            diffs[int(0.025 * n_boot)], diffs[int(0.975 * n_boot)])
+    return (sum(diffs) / n_boot, diffs[int(0.025 * n_boot)], diffs[int(0.975 * n_boot)])
 
 
 MODELS = {
@@ -174,18 +198,23 @@ def main():
     # --- verify limit cases against the existing strategies ---
     probe = load_docs(Path(RESULTS) / MODELS["openjev"]["en-sharp"])[0]
     checks = [
-        ("b=0, gate off  == Annif",
-         strat_gpb(probe, 0.85, 0.0, 0.5, None, None)
-         == rank_by(probe, "annif_score")),
-        ("hard, b=0      == gate(0.4)",
-         strat_gpb(probe, 0.85, 0.0, 0.5, 0.4, 0.0)
-         == strat_gate(probe, 0.4)),
-        ("lam=1, b=1-a   == geom(0.65)",
-         strat_gpb(probe, 0.65, 0.35, 1.0, None, None)
-         == strat_geom(probe, 0.65)),
-        ("a=1, lam=0     == prod(0.4)",
-         strat_gpb(probe, 1.0, 0.4, 0.0, None, None)
-         == strat_prod(probe, 0.4)),
+        (
+            "b=0, gate off  == Annif",
+            strat_gpb(probe, 0.85, 0.0, 0.5, None, None)
+            == rank_by(probe, "annif_score"),
+        ),
+        (
+            "hard, b=0      == gate(0.4)",
+            strat_gpb(probe, 0.85, 0.0, 0.5, 0.4, 0.0) == strat_gate(probe, 0.4),
+        ),
+        (
+            "lam=1, b=1-a   == geom(0.65)",
+            strat_gpb(probe, 0.65, 0.35, 1.0, None, None) == strat_geom(probe, 0.65),
+        ),
+        (
+            "a=1, lam=0     == prod(0.4)",
+            strat_gpb(probe, 1.0, 0.4, 0.0, None, None) == strat_prod(probe, 0.4),
+        ),
     ]
     for label, ok in checks:
         print(f"limit check {label}: {'OK' if ok else 'MISMATCH'}")
@@ -202,8 +231,10 @@ def main():
         for k in ("en-sharp", "en-state", "fi-sharp", "fi-state"):
             nd5, f5, m5, p5 = best5[k]
             ng, fg, pg = bg[k]
-            print(f"  {k:9s}  best-of-5: {m5:6s} {p5!s:>6}  {nd5:.3f}/{f5:.3f}"
-                  f"   |  GPB-best: {ng:.3f}/{fg:.3f}   {fmt_p(pg)}")
+            print(
+                f"  {k:9s}  best-existing: {m5:6s} {p5!s:>6}  {nd5:.3f}/{f5:.3f}"
+                f"   |  GPB-best: {ng:.3f}/{fg:.3f}   {fmt_p(pg)}"
+            )
 
         # select on en-sharp, transfer to the other three
         sel = bg["en-sharp"][2]
@@ -211,20 +242,25 @@ def main():
         for k in ("en-state", "fi-sharp", "fi-state"):
             nd5, f5, m5, _ = best5[k]
             nsel, fsel = eval_gpb(docs[k], sel)
-            print(f"  transfer {k:9s}  GPB(en-sel) {nsel:.3f}/{fsel:.3f}"
-                  f"   vs best-of-5 ({m5}) {nd5:.3f}/{f5:.3f}"
-                  f"   dNDCG {nsel - nd5:+.3f}")
+            print(
+                f"  transfer {k:9s}  GPB(en-sel) {nsel:.3f}/{fsel:.3f}"
+                f"   vs best-existing ({m5}) {nd5:.3f}/{f5:.3f}"
+                f"   dNDCG {nsel - nd5:+.3f}"
+            )
 
-        # significance on fi-sharp: GPB(en-sel) vs its best-of-5 method
+        # significance on fi-sharp: GPB(en-sel) vs its best existing method
         nd5, f5, m5, p5 = best5["fi-sharp"]
         if m5 == "Annif":
             fn_b = lambda g: rank_by(g, "annif_score")
         else:
-            fn_b = (lambda g: {n: f for n, _, _, f in EXISTING}[m5](g, p5))
-        mean, lo, hi = bootstrap_diff(docs["fi-sharp"],
-                                      lambda g: strat_gpb(g, *sel), fn_b)
-        print(f"  bootstrap fi-sharp (GPB-en-sel - best-of-5): "
-              f"{mean:+.4f}  95% CI [{lo:+.4f}, {hi:+.4f}]")
+            fn_b = lambda g: {n: f for n, _, _, f in EXISTING}[m5](g, p5)
+        mean, lo, hi = bootstrap_diff(
+            docs["fi-sharp"], lambda g: strat_gpb(g, *sel), fn_b
+        )
+        print(
+            f"  bootstrap fi-sharp (GPB-en-sel - best-existing): "
+            f"{mean:+.4f}  95% CI [{lo:+.4f}, {hi:+.4f}]"
+        )
         print()
 
 

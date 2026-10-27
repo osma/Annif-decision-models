@@ -18,6 +18,10 @@ Combining strategies (each has a swept hyperparameter)
     linear  score = alpha*norm(annif) + (1-alpha)*norm(noul)          [alpha]
     prod    score = norm(annif) * noul^beta                           [beta]
     rrf     score = 1/(k + rank_annif) + 1/(k + rank_noul)            [k]
+    odds    the dm_rerank backend formula: norm(annif) *
+            ((noul+eps)/(1-noul+eps))^b * sigmoid((noul-tau)/0.1),
+            squashed by x/(1+x); b > 1 can boost (see metrics.strat_odds)
+                                                                             [b]
 
 norm() is per-document min-max (a degenerate set maps to 0.5, matching
 clm.py). The best hyperparameter per strategy is the one with the highest
@@ -43,6 +47,7 @@ from metrics import (
     strat_gate,
     strat_geom,
     strat_linear,
+    strat_odds,
     strat_prod,
     strat_rrf,
 )
@@ -51,6 +56,7 @@ from metrics import (
 # ---------------------------------------------------------------------------
 # Metric aggregation over documents
 # ---------------------------------------------------------------------------
+
 
 def evaluate(docs: list[pd.DataFrame], rank_fn) -> tuple[float, float]:
     """Return (mean NDCG, mean F1@5) across docs for a ranking function."""
@@ -71,6 +77,7 @@ def evaluate(docs: list[pd.DataFrame], rank_fn) -> tuple[float, float]:
 # Dataset loading
 # ---------------------------------------------------------------------------
 
+
 def load_docs(csv_path: Path) -> list[pd.DataFrame]:
     """Return a list of per-document DataFrames of Annif-sourced candidates
     that have a noul score (the rerankable base list)."""
@@ -85,6 +92,7 @@ def load_docs(csv_path: Path) -> list[pd.DataFrame]:
 # ---------------------------------------------------------------------------
 # Experiment definition
 # ---------------------------------------------------------------------------
+
 
 def build_methods():
     """Yield (label, rank_fn_factory). Each factory takes a per-doc df and
@@ -123,6 +131,14 @@ def sweep(csv_path: Path) -> None:
     add("3. linear", "alpha", [0.8, 0.85, 0.87, 0.9, 0.92, 0.95], strat_linear)
     add("4. prod  ", "beta", [0.1, 0.2, 0.3, 0.4, 0.5], strat_prod)
     add("5. rrf   ", "k", [1, 3, 5, 10, 20, 30], strat_rrf)
+    # gate off (tau=-1.0); b covers the demote-only (b<1) and boost (b>1)
+    # regimes of the odds-ratio term
+    add(
+        "6. odds  ",
+        "b",
+        [0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1.0, 1.2, 1.45, 1.5, 1.7, 2.0],
+        lambda g, b: strat_odds(g, b),
+    )
 
     # Print the table for this dataset.
     print(f"\n{csv_path.name}   ({n} docs)")
@@ -147,7 +163,7 @@ def sweep(csv_path: Path) -> None:
         group = label.split(".")[0].strip() if label[0].isdigit() else label
         if best_by_group[group][0] == i:
             name = label.strip()
-            if name.startswith(("1.", "2.", "3.", "4.", "5.")):
+            if name.startswith(("1.", "2.", "3.", "4.", "5.", "6.")):
                 name = name[2:].strip()
             summary.append((name, param, ndc, f1))
     return summary

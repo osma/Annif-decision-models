@@ -17,6 +17,7 @@ K = 5  # cut-off for F1@5
 # Metrics (per document, binary gold relevance)
 # ---------------------------------------------------------------------------
 
+
 def ndcg(relevant: list[bool]) -> float:
     """NDCG over the whole ranked list, binary relevance.
 
@@ -51,6 +52,7 @@ def f1_at_k(relevant: list[bool], k: int) -> float:
 # Per-document score helpers
 # ---------------------------------------------------------------------------
 
+
 def minmax(values: list[float]) -> list[float]:
     lo, hi = min(values), max(values)
     if hi == lo:
@@ -74,6 +76,7 @@ def ranks_desc(values: list[float]) -> list[int]:
 # a list of row indices, best first.
 # ---------------------------------------------------------------------------
 
+
 def rank_by(df: pd.DataFrame, col: str) -> list[int]:
     return df.sort_values(col, ascending=False).index.tolist()
 
@@ -89,15 +92,16 @@ def strat_gate(df: pd.DataFrame, gate: float) -> list[int]:
 def _order_by_score(df: pd.DataFrame, score: list[float]) -> list[int]:
     """Return the df's row indices ordered by score (best first)."""
     idx = list(df.index)
-    return [idx[i] for i in sorted(range(len(idx)), key=lambda i: score[i], reverse=True)]
+    return [
+        idx[i] for i in sorted(range(len(idx)), key=lambda i: score[i], reverse=True)
+    ]
 
 
 def strat_geom(df: pd.DataFrame, a: float) -> list[int]:
     na = minmax(df["annif_score"].tolist())
     nn = minmax(df["noul_score"].tolist())
     score = [
-        (na[i] ** a) * (nn[i] ** (1 - a)) if nn[i] > 0 else 0.0
-        for i in range(len(df))
+        (na[i] ** a) * (nn[i] ** (1 - a)) if nn[i] > 0 else 0.0 for i in range(len(df))
     ]
     return _order_by_score(df, score)
 
@@ -120,4 +124,36 @@ def strat_rrf(df: pd.DataFrame, k: float) -> list[int]:
     ra = ranks_desc(df["annif_score"].tolist())
     rn = ranks_desc(df["noul_score"].tolist())
     score = [1.0 / (k + ra[i]) + 1.0 / (k + rn[i]) for i in range(len(df))]
+    return _order_by_score(df, score)
+
+
+# Damping constant of the odds-ratio term, same as the dm_rerank backend.
+ODDS_EPS = 0.01
+
+
+def strat_odds(df: pd.DataFrame, b: float, tau: float = -1.0) -> list[int]:
+    """The dm_rerank backend's odds-ratio blend:
+
+        raw   = norm(annif) * ((noul + eps) / (1 - noul + eps))**b
+                * sigmoid((noul - tau) / 0.1)
+        score = raw / (1 + raw)
+
+    Unlike ``strat_prod`` (``norm(annif) * noul**b``), whose noul factor is
+    always <= 1, the odds ratio can exceed 1 for confident "yes" answers,
+    so with b > 1 this strategy can *boost* a candidate above its source
+    score. tau defaults to -1.0 (gate off), matching the gateless design
+    of the other single-parameter strategies. The minmax normalization and
+    the squash are both order-preserving, so this reproduces the backend's
+    ranking exactly under the prototype's rank-based metrics; the squash
+    is kept for fidelity to the backend formula (it matters for
+    score-based metrics, where it prevents clamping at 1.0)."""
+    na = minmax(df["annif_score"].tolist())
+    nn = df["noul_score"].tolist()
+    score = []
+    for i in range(len(df)):
+        noul = nn[i]
+        odds = (noul + ODDS_EPS) / (1.0 - noul + ODDS_EPS)
+        gate = 1.0 / (1.0 + math.exp(-(noul - tau) / 0.1))
+        raw = na[i] * (odds**b) * gate
+        score.append(raw / (1.0 + raw) if raw > 0 else 0.0)
     return _order_by_score(df, score)
