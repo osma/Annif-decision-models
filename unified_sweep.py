@@ -189,6 +189,18 @@ MODELS = {
         "fi-sharp": "rerank-fi-bespoke-nimble-sharp.csv",
         "fi-state": "rerank-fi-bespoke-nimble-sharp-state.csv",
     },
+    "h2o-lightning": {
+        "en-sharp": "rerank-en-h2o-lightning-sharp.csv",
+        "en-state": "rerank-en-h2o-lightning-sharp-state.csv",
+        "fi-sharp": "rerank-fi-h2o-lightning-sharp.csv",
+        "fi-state": "rerank-fi-h2o-lightning-sharp-state.csv",
+    },
+    "vllm-d3-mini": {
+        "en-sharp": "rerank-en-vllm-d3-mini-sharp.csv",
+        "en-state": "rerank-en-vllm-d3-mini-sharp-state.csv",
+        "fi-sharp": "rerank-fi-vllm-d3-mini-sharp.csv",
+        "fi-state": "rerank-fi-vllm-d3-mini-sharp-state.csv",
+    },
 }
 
 

@@ -2,13 +2,12 @@
 """Verify the numbers for the README's 'Recommended production blending'
 and 'Optuna search space' sections under the odds formula.
 
-1. Fixed-constant averages over all 32 model x lang x config datasets:
+1. Fixed-constant averages over all model x lang x config datasets:
    old default (prod beta=0.5) vs. candidate new defaults (odds b=0.2..0.5),
    plus the per-dataset best (oracle) for the gap statement.
-2. Search space: on the 20 model x dataset runs used by the old
-   verification (5 models, en/fi x sharp/state), does a coarse grid of the
-   odds formula (b in [0, 2], tau in a few values) match the per-dataset
-   oracle (best of all six blend.py methods)?
+2. Search space: over all model x dataset runs (en/fi x sharp/state),
+   does a coarse grid of the odds formula (b in [0, 2], tau in a few
+   values) match the per-dataset oracle (best of all six blend.py methods)?
 """
 
 from __future__ import annotations
@@ -29,6 +28,8 @@ MODELS = [
     "clefflash",
     "bespoke-nimble",
     "openjev",
+    "h2o-lightning",
+    "vllm-d3-mini",
 ]
 CONFIGS = ["sharp", "sharp-state"]
 
@@ -45,8 +46,9 @@ def per_dataset_best(docs):
 
 
 def main() -> None:
-    # Part 1: fixed constants over all 32 datasets
-    print("Part 1: fixed constant, mean NDCG over 32 datasets")
+    # Part 1: fixed constants over all model x lang x config datasets
+    n_ds = len(MODELS) * 2 * len(CONFIGS)
+    print(f"Part 1: fixed constant, mean NDCG over {n_ds} datasets")
     for label, fn in (
         ("prod beta=0.5 (old default)", lambda g: strat_prod(g, 0.5)),
         *[
@@ -70,9 +72,12 @@ def main() -> None:
                 acc.append(per_dataset_best(docs)[0])
     print(f"  {'per-dataset best (oracle)':28s} {sum(acc) / len(acc):.4f}")
 
-    # Part 2: odds grid vs oracle on the 20 runs
-    print("\nPart 2: odds (b, tau) grid vs per-dataset oracle, 20 runs")
-    grid_models = ["lev", "kev", "clefflash", "openjev", "bespoke-nimble"]
+    # Part 2: odds grid vs oracle on the 32 runs
+    print(
+        f"\nPart 2: odds (b, tau) grid vs per-dataset oracle, "
+        f"{len(MODELS) * 2 * len(CONFIGS)} runs"
+    )
+    grid_models = MODELS
     gaps = []
     for slug in grid_models:
         for lang in ("en", "fi"):

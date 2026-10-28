@@ -132,6 +132,8 @@ delivers Kev's best F1@5 thanks to its sharply bimodal scores.
 | d1-omni-600M (600M BF16) | 0.632 / 0.269 | 0.613 / 0.260 | 0.559 / 0.213 | 0.579 / 0.215 |
 | d1-3B (3B Q8_0) | 0.682 / 0.294 | 0.693 / 0.345 | 0.635 / 0.280 | 0.646 / 0.287 |
 | lev (4B Q8_0) | 0.678 / 0.362 | 0.689 / 0.327 | 0.674 / 0.324 | 0.674 / 0.333 |
+| H2O-Lightning (4B Q8_0) | 0.700 / 0.344 | 0.730 / 0.376 | 0.694 / 0.347 | 0.698 / 0.347 |
+| vllm-d3-mini (4B Q8_0) | 0.716 / 0.362 | 0.722 / 0.370 | 0.688 / 0.343 | 0.699 / 0.360 |
 | Kev-4B (4B Q8_0) | 0.699 / 0.338 | 0.691 / 0.344 | 0.671 / 0.330 | 0.671 / 0.306 |
 | Clef-Flash (9B Q4_K_M) | **0.758** / 0.391 | 0.751 / 0.376 | 0.718 / 0.365 | 0.722 / 0.379 |
 | Bespoke-Nimble (9B Q4_K_M) | 0.721 / 0.362 | 0.755 / 0.400 | 0.688 / 0.364 | 0.732 / 0.404 |
@@ -153,14 +155,16 @@ averaged over documents. Reproducible with
 | d1-omni-600M (600M BF16) | 0.815 / 0.498 (odds b=0.2) | 0.806 / 0.477 (prod β=0.1) |
 | d1-3B (3B Q8_0) | 0.821 / 0.506 (odds b=0.4) | 0.804 / 0.485 (≈Annif) |
 | lev (4B Q8_0) | 0.842 / 0.509 (odds b=0.3) | 0.809 / 0.480 (linear α=0.95) |
+| H2O-Lightning (4B Q8_0) | 0.838 / 0.496 (odds b=1) | 0.815 / 0.483 (linear α=0.8) |
+| vllm-d3-mini (4B Q8_0) | 0.853 / 0.524 (odds b=0.5) | 0.818 / 0.510 (geom a=0.6) |
 | Kev-4B (4B Q8_0) | 0.838 / 0.514 (odds b=0.7) | 0.819 / 0.511 (geom a=0.55) |
 | Clef-Flash (9B Q4_K_M) | **0.861 / 0.523** (odds b=0.7) | 0.816 / 0.503 (geom a=0.8) |
 | Bespoke-Nimble (9B Q4_K_M) | 0.843 / 0.522 (odds b=0.3) | 0.816 / 0.489 (linear α=0.85) |
 | OpenJev (27B Q4_K_M) | 0.850 / 0.526 (odds b=0.5) | **0.829 / 0.529** (geom a=0.65) |
 
 The new `odds` strategy (the dm_rerank backend's blend) is the best
-per-dataset merge on 14 of the 32 model×language×config datasets — most
-of the en ones — and never trails the previous best by more than
+per-dataset merge on 18 of the 40 model×language×config datasets — 17
+of the 20 en ones — and never trails the previous best by more than
 ~0.005. Where the old methods keep winning (several fi runs, the
 weakest models) the best `odds` value is a small b (0.1–0.3), i.e. the
 same source-dominant nudge the `prod`/`linear` blends give there; the
@@ -168,11 +172,13 @@ b > 1 *boost* regime only pays off on corpora where the source buries
 golds deep in the candidate pool (see the theses validation in the
 dm_rerank PR description).
 
-Kev's hard **`gate`** still delivers the **best F1@5 of the 4B class**
-on both languages (0.521 en / 0.504 fi, each above Annif) — a property
-of its sharply bimodal, thresholdable scores rather than its ranking.
-(Clef-Flash takes the overall F1@5 lead at 0.536 en / 0.514 fi, with a
-soft blend.)
+vllm-d3-mini now takes the **best F1@5 of the 4B class** on both
+languages with a soft blend (0.524 en / 0.510 fi, each above Annif).
+Kev's hard **`gate`** still delivers the **best F1@5 achievable with a
+hard threshold** in the 4B class (0.521 en / 0.504 fi) — a property of
+its sharply bimodal, thresholdable scores rather than its ranking.
+(Clef-Flash still takes the overall F1@5 lead at 0.536 en / 0.514 fi,
+with a soft blend.)
 
 ### Raw results
 
@@ -201,6 +207,8 @@ non-gold = grey, correct-but-unsuggested = purple):
 | d1-omni-600M | [sharp](results/rerank-en-d1-omni-600M-sharp.png) · [sharp+rules](results/rerank-en-d1-omni-600M-sharp-state.png) | [sharp](results/rerank-fi-d1-omni-600M-sharp.png) · [sharp+rules](results/rerank-fi-d1-omni-600M-sharp-state.png) |
 | d1-3B | [sharp](results/rerank-en-d1-3B-sharp.png) · [sharp+rules](results/rerank-en-d1-3B-sharp-state.png) | [sharp](results/rerank-fi-d1-3B-sharp.png) · [sharp+rules](results/rerank-fi-d1-3B-sharp-state.png) |
 | lev | [sharp](results/rerank-en-lev-sharp.png) · [sharp+rules](results/rerank-en-lev-sharp-state.png) | [sharp](results/rerank-fi-lev-sharp.png) · [sharp+rules](results/rerank-fi-lev-sharp-state.png) |
+| H2O-Lightning | [sharp](results/rerank-en-h2o-lightning-sharp.png) · [sharp+rules](results/rerank-en-h2o-lightning-sharp-state.png) | [sharp](results/rerank-fi-h2o-lightning-sharp.png) · [sharp+rules](results/rerank-fi-h2o-lightning-sharp-state.png) |
+| vllm-d3-mini | [sharp](results/rerank-en-vllm-d3-mini-sharp.png) · [sharp+rules](results/rerank-en-vllm-d3-mini-sharp-state.png) | [sharp](results/rerank-fi-vllm-d3-mini-sharp.png) · [sharp+rules](results/rerank-fi-vllm-d3-mini-sharp-state.png) |
 | Kev-4B | [sharp](results/rerank-en-kev-sharp.png) · [sharp+rules](results/rerank-en-kev-sharp-state.png) | [sharp](results/rerank-fi-kev-sharp.png) · [sharp+rules](results/rerank-fi-kev-sharp-state.png) |
 | Clef-Flash | [sharp](results/rerank-en-clefflash-sharp.png) · [sharp+rules](results/rerank-en-clefflash-sharp-state.png) | [sharp](results/rerank-fi-clefflash-sharp.png) · [sharp+rules](results/rerank-fi-clefflash-sharp-state.png) |
 | Bespoke-Nimble | [sharp](results/rerank-en-bespoke-nimble-sharp.png) · [sharp+rules](results/rerank-en-bespoke-nimble-sharp-state.png) | [sharp](results/rerank-fi-bespoke-nimble-sharp.png) · [sharp+rules](results/rerank-fi-bespoke-nimble-sharp-state.png) |
@@ -214,8 +222,9 @@ non-gold = grey, correct-but-unsuggested = purple):
   en (0.850 / 0.526, odds b=0.5). With Bespoke-Nimble it is one of the
   two models where the state rules clearly help in *both* languages, and
   it posts the stronger gain.
-- **Bespoke-Nimble (9B)** — a solid mid-tier model: third-best en
-  blend (0.843 / 0.522, odds b=0.3), behind Clef-Flash and OpenJev, and a
+- **Bespoke-Nimble (9B)** — a solid mid-tier model: fourth-best en
+  blend (0.843 / 0.522, odds b=0.3), behind Clef-Flash, OpenJev and
+  vllm-d3-mini, and a
   useful +0.03…+0.04 state-rules lift in both languages. Qualitative checks
   show it is more single-subject-locked than OpenJev: it caught
   `photography` in a dance photo book (0.49, better than lev/Clef) but
@@ -239,6 +248,23 @@ non-gold = grey, correct-but-unsuggested = purple):
   measurable lift for Kev (−0.01 en / ≈0 fi), so use it without them.
 - **Per-language selection** (if acceptable in production): Clef-Flash for
   en, OpenJev for fi → 0.861 en / 0.829 fi, the highest combined result.
+- **H2O-Lightning (4B Q8_0)** — solid 4B-class entry: top raw scores
+  of the 4B class in all four configs (0.700–0.730), leading on both
+  fi configs (0.694/0.698) and en sharp+rules (0.730), with a clear
+  `--state-rules` lift in both languages (+0.030 en / +0.004 fi);
+  vllm-d3-mini leads only en sharp on raw scores (0.716 vs 0.700).
+  Blends trail lev, Kev-4B and vllm-d3-mini (best 0.838 en / 0.815 fi
+  vs 0.842 / 0.819 / 0.853 / 0.818); state rules help its blends too
+  (en 0.838 vs 0.835, fi 0.815 vs 0.808).
+- **vllm-d3-mini (4B Q8_0)** — the strongest 4B blend: 0.853 / 0.524
+  (odds b=0.5) on en+state — second-best en NDCG of any model, behind
+  only Clef-Flash (0.861) — and 0.818 / 0.510 (geom a=0.6) on
+  fi+state, third-best fi behind OpenJev and Kev-4B. Its raw noul
+  scores are top-tier in the 4B class (en 0.716/0.722, best on en
+  sharp; fi 0.688/0.699, a hair below H2O-Lightning's 0.694/0.698);
+  the blend edge on both languages comes from better-calibrated
+  scores that the soft blends exploit. `--state-rules` helps its
+  blends in both languages.
 - **lev** — mid-tier on raw scores (below the 9B class, above the d1
   models), but it is the model the original query-formulation
   experiments (predicate phrasing, state rules, question types) were
@@ -270,7 +296,7 @@ non-gold = grey, correct-but-unsuggested = purple):
 - **Annif-dominant blending** is the right way to combine the two
   signals; the model score adds a small, real correction on top of Annif.
   The **`odds`** (dm_rerank backend) formula is the strongest single
-  choice here — best NDCG on 14/32 datasets — and it subsumes the
+  choice here — best NDCG on 18/40 datasets — and it subsumes the
   older source-dominant blends (small `b` ≈ 0.1–0.4 gives the same
   nudge `prod`/`linear` gave); its extra `b > 1` boost only helps on
   corpora where the source buries golds deep in the candidate pool.
@@ -372,7 +398,7 @@ dataset:
 | `linear` [`metrics.py`](metrics.py:105) | `α·norm(annif) + (1−α)·norm(noul)` (the [`clm.py`](clm.py:329) baseline) | weak/noisy model signal — a small additive nudge never hurts | no interaction term; loses to the multiplicative blends on strong models |
 | `prod` [`metrics.py`](metrics.py:112) | `norm(annif) · noul^β`, **raw** (unnormalized) noul | calibrated, meaningful absolute levels (lev, Clef, OpenJev) | penalizes low-level miscalibrated scores (Kev, Laya); noul^β ≤ 1 so it can only pull scores *down* |
 | `rrf` [`metrics.py`](metrics.py:119) | `1/(k+rank_annif) + 1/(k+rank_noul)` — ranks only, no scores | incomparable scales but complementary *orderings* | amplifies a *bad* ordering (Laya fi → 0.704); discards magnitude; now superseded by `odds` |
-| `odds` [`metrics.py`](metrics.py:129) | the dm_rerank backend formula: `norm(annif) · ((noul+ε)/(1−noul+ε))^b · σ((noul−τ)/0.1)`, squashed by `x/(1+x)`; **b > 1 can boost** a confident "yes" above its source score | broad winner (14/32 best-NDCG datasets, most en); subsumes the `prod` nudge at small b | the boost is useless (and mildly harmful) when the source pool is already well-ordered — that is the common blurb case |
+| `odds` [`metrics.py`](metrics.py:129) | the dm_rerank backend formula: `norm(annif) · ((noul+ε)/(1−noul+ε))^b · σ((noul−τ)/0.1)`, squashed by `x/(1+x)`; **b > 1 can boost** a confident "yes" above its source score | broad winner (18/40 best-NDCG datasets, 17 of 20 en); subsumes the `prod` nudge at small b | the boost is useless (and mildly harmful) when the source pool is already well-ordered — that is the common blurb case |
 
 Across the board, the model's ordering quality dominates: every model
 above Laya beats Annif by a comparable margin (~0.01–0.04 NDCG)
@@ -382,10 +408,10 @@ matters for F1@5/precision (where `gate` + Kev stands out).
 ### Recommended production blending
 
 - **Default (any model):** **`odds` with `b = 0.3`** (gate off, τ = −1).
-  A single fixed constant that averages 0.814 NDCG over the 32
+  A single fixed constant that averages 0.815 NDCG over the 40
   model×language×config datasets — the same average as the previous
-  default (`prod` β = 0.5, 0.814) — within ~0.008 of the per-dataset
-  best (0.822) at zero tuning cost, with no catastrophic failure mode:
+  default (`prod` β = 0.5, 0.815) — within ~0.008 of the per-dataset
+  best (0.823) at zero tuning cost, with no catastrophic failure mode:
   with a weak model it degrades gracefully to ≈Annif. Unlike `prod`,
   it can also *boost* when `b` is raised, so it is the safe superset of
   the old default. Expected effect: **en +0.01…+0.04 NDCG** over
@@ -406,8 +432,8 @@ matters for F1@5/precision (where `gate` + Kev stands out).
 - **Don't ship:** `rrf` (one-off win, amplifies bad orderings, now
   superseded by `odds`) or per-dataset parameter selection — 5-fold CV
   over 50–63 docs selects a different method per fold (held-out swings
-  0.67–0.92 within one dataset), and its honest 0.822 average only
-  marginally beats the fixed default (0.814) while requiring a labeled
+  0.66–0.92 within one dataset), and its honest 0.821 average only
+  marginally beats the fixed default (0.815) while requiring a labeled
   validation set.
 
 ### Optuna search space for unknown model + dataset
@@ -438,9 +464,9 @@ b   ∈ [0, 2]        # 0 = source only; (0,1) = nudge; >1 = boost
   scale: a boost can make `raw` exceed 1, and without the squash the
   score would be clamped into a tie by the suggestion machinery.
 
-**Verification:** on all 20 model×dataset runs (the five models lev,
-Kev, Clef-Flash, OpenJev and Bespoke-Nimble, en/fi × with/without state
-rules), the best point of a coarse grid of this space (b in 0.1 steps,
+**Verification:** on all 40 model×dataset runs (all ten models, en/fi
+× with/without state rules), the best point of a coarse grid of this
+space (b in 0.1 steps,
 τ ∈ {−1.0, −0.25, 0.2, 0.3, 0.4, 0.5}) matches the per-dataset oracle
 (best of the six `blend.py` methods) with a **mean gap of +0.0001 NDCG
 (worst −0.0045)** — effectively lossless compression, and on a few

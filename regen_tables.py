@@ -29,6 +29,8 @@ MODELS = [
     ("Clef-Flash (9B Q4_K_M)", "clefflash"),
     ("Bespoke-Nimble (9B Q4_K_M)", "bespoke-nimble"),
     ("OpenJev (27B Q4_K_M)", "openjev"),
+    ("H2O-Lightning (4B Q8_0)", "h2o-lightning"),
+    ("vllm-d3-mini (4B Q8_0)", "vllm-d3-mini"),
 ]
 
 CONFIGS = ["sharp", "sharp-state"]
@@ -119,9 +121,10 @@ def main() -> None:
                     best = (r[0], r[1], f"{slug} {cfg} ({r[2]} {r[3]})")
         print(f"  {lang}: {best[0]:.3f} / {best[1]:.3f}  {best[2]}")
 
-    # --- win tally: which method is best on how many of the 32 datasets ---
+    # --- win tally: which method is best on how many of the datasets ---
     from collections import Counter
 
+    n_datasets = len(MODELS) * 2 * len(CONFIGS)
     tally: Counter = Counter()
     for _label, slug in MODELS:
         for lang in ("en", "fi"):
@@ -129,12 +132,18 @@ def main() -> None:
                 docs = load(f"rerank-{lang}-{slug}-{cfg}.csv")
                 _ndc, _f1, method, _v = best_blend(docs)
                 tally[method] += 1
-    print("\nBest-method win tally over the 32 model x lang x config datasets:")
+    print(
+        f"\nBest-method win tally over the {n_datasets} "
+        f"model x lang x config datasets:"
+    )
     for method, n in tally.most_common():
-        print(f"  {method:8s} {n}/32")
+        print(f"  {method:8s} {n}/{n_datasets}")
 
     # --- fixed-b average for the production recommendation ---
-    print("\nFixed odds-b (no per-dataset tuning), mean NDCG over the 32 datasets:")
+    print(
+        f"\nFixed odds-b (no per-dataset tuning), "
+        f"mean NDCG over the {n_datasets} datasets:"
+    )
     for b in (0.1, 0.2, 0.3, 0.4, 0.5, 0.7):
         acc = []
         for _label, slug in MODELS:
